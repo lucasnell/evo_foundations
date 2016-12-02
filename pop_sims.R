@@ -47,91 +47,14 @@ sym_3sp_dr <- function(b2_change_fun, phases = 1, abundances_0 = rep(1000, 3),
 
 
 
+
+
+
+
+
 # =========================================================
 # =========================================================
 # Simulation set 1: sp 2 and sp 3 equally affected by X, but in different directions
-# Cyclical X for 8 phases
-# Relatively low b1
-# =========================================================
-# =========================================================
-
-# ---------------
-# Setting simulation parameters
-# ---------------
-n_phases <- 8
-n_sims <- 100
-phase_len <- 100
-# Effect of X on sp 1:2, 3
-b1s <- c(0.1, -0.1)
-r_sd <- abs(b1s[1]) * 1.75
-b2_change_cont <- function(X_t, phi = abs(b1s[1]) * 0.5){ 
-    #rel_t, phases_done, phi = abs(b1s[1]) * 0.25) {
-    # beta1 <- abs((2 * rel_t) - 1)
-    b3_2 <- (1 - X_t)/2 * phi # (1 - beta1) * phi
-    b2_3<- (X_t + 1)/2 * phi  # beta1 * phi
-    return(c(b3_2, b2_3))
-}
-
-
-# 80,000 simulated generations took 2.72 secs
-sim_df <- do_sims(n_sims, sym_3sp_dr, 8, b2_change_fun = b2_change_cont, 
-                  phases = n_phases, b1s = b1s, phase_len = phase_len, r_sd = r_sd) %>%
-    gather(species, abundance, -generation, -sim, factor_key = TRUE) %>% 
-    group_by(sim, species) %>% 
-    mutate(extinct = any(abundance == 0)) %>%
-    ungroup
-
-
-sim_df %>% 
-    ggplot(aes(generation, abundance)) +
-    geom_text(data = data_frame(species = unique(sim_df$species), 
-                                generation = rep(0,3), 
-                                abundance = rep(2100, 3)), 
-              aes(label = species),
-              size = 4, vjust = 0, hjust = 0, fontface = 'bold') + 
-    geom_line(aes(group = sim, color = factor(extinct)), alpha = 0.3) +
-    stat_summary(geom = 'line', fun.y = mean) +
-    theme_lan() +
-    facet_grid(species ~ .) + 
-    ylim(c(0, 2250)) +
-    theme(strip.text = element_blank(), legend.position = 'none') +
-    scale_color_manual(values = c('dodgerblue', 'red'))
-
-
-sim_df %>% 
-    filter(generation == (n_phases * phase_len)) %>% 
-    group_by(species) %>% 
-    summarize(survived = mean(abundance > 0))
-
-
-
-
-# Focusing on 1 simulation where independent went extinct
-sim_df %>%
-    filter(sim == 3) %T>%
-    {p_limits <<- c(c_max = max(c(min(.$abundance), 0 + diff(range(.$abundance))/10)), 
-                    c_min = 0); .} %>% 
-    ggplot(aes(generation, abundance, color = species)) +
-    stat_function(fun = u_curve_1x,
-                  args = list(phases = n_phases, time_len = n_phases * phase_len,
-                              c_max = p_limits['c_max'],
-                              c_min = p_limits['c_min']),
-                  linetype = 2, color = 'gray80', size = 0.5, n = 1001) +
-    geom_line(size = 0.75) +
-    theme_lan()
-
-
-
-
-
-
-
-
-
-
-# =========================================================
-# =========================================================
-# Simulation set 2: sp 2 and sp 3 equally affected by X, but in different directions
 # Cyclical X for 1 phase
 # =========================================================
 # =========================================================
@@ -152,6 +75,7 @@ b2_change_cont <- function(X_t, phi = max(b1s) * 0.5){
     b2_3<- (X_t + 1)/2 * phi  # beta1 * phi
     return(c(b3_2, b2_3))
 }
+
 
 sim_df <- do_sims(n_sims, sym_3sp_dr, 7, b2_change_fun = b2_change_cont, 
                   phases = n_phases, b1s = b1s, phase_len = phase_len, 
@@ -178,9 +102,6 @@ sim_df %>%
     ylim(c(0, 2250)) +
     theme(strip.text = element_blank(), legend.position = 'none') +
     scale_color_manual(values = c('dodgerblue', 'red'))
-
-
-sim_df %>% filter()
 
 
 
@@ -211,11 +132,12 @@ sim_df %>%
 
 
 
+
 # =========================================================
 # =========================================================
-# Simulation set 3: sp 2 and sp 3 equally affected by X, but in different directions
+# Simulation set 2: sp 2 and sp 3 equally affected by X, but in different directions
 # Cyclical X for 8 phases
-# Parasitism when environment is good for 2:3
+# Relatively low b1
 # =========================================================
 # =========================================================
 
@@ -228,12 +150,13 @@ phase_len <- 100
 # Effect of X on sp 1:2, 3
 b1s <- c(0.1, -0.1)
 r_sd <- abs(b1s[1]) * 1.75
-b2_change_cont <- function(X_t, phi = 0.15){ 
-    b3_2 <- (0.5 - X_t)/2 * phi
-    b2_3<- (X_t + 0.5)/2 * phi
+b2_change_cont <- function(X_t, phi = abs(b1s[1]) * 0.5){ 
+    #rel_t, phases_done, phi = abs(b1s[1]) * 0.25) {
+    # beta1 <- abs((2 * rel_t) - 1)
+    b3_2 <- (1 - X_t)/2 * phi # (1 - beta1) * phi
+    b2_3<- (X_t + 1)/2 * phi  # beta1 * phi
     return(c(b3_2, b2_3))
 }
-
 
 # 80,000 simulated generations took 2.72 secs
 sim_df <- do_sims(n_sims, sym_3sp_dr, 8, b2_change_fun = b2_change_cont, 
@@ -268,9 +191,98 @@ sim_df %>%
 
 
 
+# # Focusing on 1 simulation where independent went extinct
+# sim_df %>%
+#     filter(sim == 3) %T>%
+#     {p_limits <<- c(c_max = max(c(min(.$abundance), 0 + diff(range(.$abundance))/10)), 
+#                     c_min = 0); .} %>% 
+#     ggplot(aes(generation, abundance, color = species)) +
+#     stat_function(fun = u_curve_1x,
+#                   args = list(phases = n_phases, time_len = n_phases * phase_len,
+#                               c_max = p_limits['c_max'],
+#                               c_min = p_limits['c_min']),
+#                   linetype = 2, color = 'gray80', size = 0.5, n = 1001) +
+#     geom_line(size = 0.75) +
+#     theme_lan()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 
+# 
+# # =========================================================
+# # =========================================================
+# # Simulation set 3: sp 2 and sp 3 equally affected by X, but in different directions
+# # Cyclical X for 8 phases
+# # Parasitism when environment is good for 2:3
+# # =========================================================
+# # =========================================================
+# 
+# # ---------------
+# # Setting simulation parameters
+# # ---------------
+# n_phases <- 8
+# n_sims <- 100
+# phase_len <- 100
+# # Effect of X on sp 1:2, 3
+# b1s <- c(0.1, -0.1)
+# r_sd <- abs(b1s[1]) * 1.75
+# b2_change_cont <- function(X_t, phi = 0.15){ 
+#     b3_2 <- (0.5 - X_t)/2 * phi
+#     b2_3<- (X_t + 0.5)/2 * phi
+#     return(c(b3_2, b2_3))
+# }
+# 
+# 
+# # 80,000 simulated generations took 2.72 secs
+# sim_df <- do_sims(n_sims, sym_3sp_dr, 8, b2_change_fun = b2_change_cont, 
+#                   phases = n_phases, b1s = b1s, phase_len = phase_len, r_sd = r_sd) %>%
+#     gather(species, abundance, -generation, -sim, factor_key = TRUE) %>% 
+#     group_by(sim, species) %>% 
+#     mutate(extinct = any(abundance == 0)) %>%
+#     ungroup
+# 
+# 
+# sim_df %>% 
+#     ggplot(aes(generation, abundance)) +
+#     geom_text(data = data_frame(species = unique(sim_df$species), 
+#                                 generation = rep(0,3), 
+#                                 abundance = rep(2100, 3)), 
+#               aes(label = species),
+#               size = 4, vjust = 0, hjust = 0, fontface = 'bold') + 
+#     geom_line(aes(group = sim, color = factor(extinct)), alpha = 0.3) +
+#     stat_summary(geom = 'line', fun.y = mean) +
+#     theme_lan() +
+#     facet_grid(species ~ .) + 
+#     ylim(c(0, 2250)) +
+#     theme(strip.text = element_blank(), legend.position = 'none') +
+#     scale_color_manual(values = c('dodgerblue', 'red'))
+# 
+# 
+# sim_df %>% 
+#     filter(generation == (n_phases * phase_len)) %>% 
+#     group_by(species) %>% 
+#     summarize(survived = mean(abundance > 0))
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 
 
 
