@@ -4,6 +4,7 @@ library(magrittr)
 library(parallel)
 library(grid)
 library(car)
+library(ggrepel)
 
 
 
@@ -11,11 +12,15 @@ library(car)
 theme_lan <- function(base_size = 10, base_family = 'Helvetica') {
     theme_bw(base_size = base_size, base_family = base_family) %+replace%
         theme(
-            strip.text = element_text(face = 'bold', size = 11),
+            strip.text = element_text(face = 'bold', size = 12),
             strip.background = element_rect(color = NA, fill = NA),
-            panel.grid = element_blank()
+            panel.grid = element_blank(),
+            legend.background = element_rect(fill = NA, color = NA),
+            legend.title = element_blank(),
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0)
         )
 }
+gg_colors <- c('#1b9e77', '#d95f02', '#7570b3')
 
 
 inv_logit <- function(x){
@@ -31,15 +36,14 @@ logit <- function(x){
 # `other_spp` is `alpha_12 * N_2[t]`, indicator of how sp 2 affects sp 1 and N of sp 2 at
 # time t; it can be of length > 1
 log_growth <- function(N_t, r, K, other_spp = 0){
-    new_N <- N_t + r * N_t * {(K - N_t + other_spp) / K}
-    # new_N <- N_t * exp(r * (1 - N_t / K))
+    # new_N <- N_t + r * N_t * {(K - N_t + other_spp) / K}
+    new_N <- N_t * exp(r * {(K - N_t + other_spp) / K})
     # To avoid negative or very low abundances
     new_N <- ifelse(new_N < 0.5, 0, new_N)
     return(new_N)
     # new_N <- ifelse(new_N < 0, 0, new_N)
     # return(matrix(as.integer(new_N), nrow = 1))
 }
-
 
 
 
