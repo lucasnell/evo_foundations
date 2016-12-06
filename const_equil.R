@@ -67,7 +67,7 @@ plot_a <- plot_df %>%
     theme_lan() +
     ggtitle('A') +
     ylab(expression('Relative equilibrium abundance (' * N[e] ~ '/' ~ K * ')')) +
-    xlab(expression('Symbiotic effect (' * alpha[32] ~ and ~ alpha[23] * ')')) +
+    xlab(expression('Symbiotic effect (' * alpha[s] * ')')) +
     scale_color_brewer(palette = 'Dark2') +
     theme(legend.position = 'none') +
     geom_text_repel(
@@ -79,14 +79,18 @@ plot_a <- plot_df %>%
         box.padding = unit(1, 'lines'), fontface = 'bold')
 
 plot_b <- plot_df %>%
-    filter(a_sym <= 0.3) %>%
+    filter(a_sym <= 0.31, a_sym >= 0.035) %>%
     ggplot(aes(a_sym, abundance / 2000, color = species)) +
+    geom_vline(data = data_frame(
+        y = c(0.05, 0.3), 
+        a_comp = paste('alpha[12] / alpha[21] == ', unique(equil_sim_df$a_comp) / -0.1)), 
+               aes(xintercept = y), linetype = 2) +
     geom_line(size = 0.75) +
     facet_wrap( ~ a_comp, labeller = label_parsed, ncol = 1) +
     theme_lan() +
     ggtitle('B') +
     ylab(expression('Relative equilibrium abundance (' * N[e] ~ '/' ~ K * ')')) +
-    xlab(expression('Symbiotic effect (' * alpha[32] ~ and ~ alpha[23] * ')')) +
+    xlab(expression('Symbiotic effect (' * alpha[s] * ')')) +
     scale_color_brewer(palette = 'Dark2') +
     theme(legend.position = 'none')
 

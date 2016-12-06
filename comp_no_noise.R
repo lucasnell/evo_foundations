@@ -1,4 +1,4 @@
-# Competition in linearly changing environment, no noise
+# Competition in fluctuating environment, no noise
 
 source('preamble.R')
 
@@ -23,7 +23,6 @@ u_curve <- function(phase_len, phases = 1, y_max = 1, y_min = 0, exact_mean = NU
     return(out)
 }
 
-plot(u_curve(100), type = 'l')
 
 # Linearly changing X variable
 lin_fun <- function(time_len, start = 1, end = 0) {
@@ -52,8 +51,8 @@ sym_3sp_1phase <- function(abundances_0, X, a_sym_fun, alphas, b_Xs, K, r_is) {
         a_mat[3,2] <- a_syms[1]
         a_mat[2,3] <- a_syms[2]
         # All interspecific effects
-        other_spp <- a_mat[cbind(1:3, c(2,3,1))] * pop_sizes[t, c(2,3,1)] +
-            a_mat[cbind(1:3, c(3,1,2))] * pop_sizes[t, c(3,2,1)]
+        other_spp <- a_mat[cbind(c(2,3,1), 1:3)] * pop_sizes[t, c(2,3,1)] +
+            a_mat[cbind(c(3,1,2), 1:3)] * pop_sizes[t, c(3,1,2)]
         # Changing rs_t based on X[t]
         rs_t <- b_Xs * X[t] + r_is
         pop_sizes_t <- log_growth(pop_sizes[t,], rs_t, K, other_spp)
@@ -74,10 +73,10 @@ sym_3sp_comp_equil <- function(a_sym_fun, alphas, phase_len = 100,
                                K = 2000,
                                spp_names = c('competitor', 'host', 'symbiont'),
                                r_is = rep(0.1,3),
-                               t_max = 30, X_curve = TRUE, leeway = 0) {
+                               t_max = 60, X_curve = TRUE, leeway = 0) {
     
     if (X_curve){
-        X <- u_curve(phase_len, phases = 1, exact_mean = 0.5)
+        X <- u_curve(phase_len, phases = 1)
     } else {
         X <- lin_fun(phase_len, start = 1, end = 0)
     }
@@ -125,9 +124,6 @@ sym_3sp_comp_equil <- function(a_sym_fun, alphas, phase_len = 100,
 
 
 
-
-
-
 sym_3sp_comp <- function(a_sym_fun, alphas, phase_len = 100, phases = 1,
                          abundances_0 = rep(1000, 3), b_Xs = c(0.1,0.1,-0.1), K = 2000,
                          spp_names = c('competitor', 'host', 'symbiont'),
@@ -137,7 +133,7 @@ sym_3sp_comp <- function(a_sym_fun, alphas, phase_len = 100, phases = 1,
     time_len <- as.integer(phase_len * phases)
     
     if (X_curve){
-        X <- u_curve(phase_len, phases = phases, exact_mean = 0.5)
+        X <- u_curve(phase_len, phases = phases)
     } else {
         X <- lin_fun(time_len, start = 1, end = 0)
     }
@@ -192,49 +188,45 @@ sym_3sp_comp <- function(a_sym_fun, alphas, phase_len = 100, phases = 1,
 
 
 
+
 alphas <- matrix(numeric(9), nrow = 3)
-alphas[2,1] = -0.1
-alphas[1,2] = -0.15
-b_Xs = 0.1
-
-
+alphas[2,1] <- -0.1
+alphas[1,2] <- -0.2
 
 
 
 # a_sym <- function(x, p = -0.5){a_sym_change_cont(x, p)}
 # Effect of species 3 on 2, and vice versa
-a_sym <- function(x, phi = 1, y_min = -0.1){
-    c(resp_fun(x, 1, y_min, shape = 200) * phi, resp_fun(x, y_min, 1) * phi)
+a_sym <- function(x, phi = 1, y_max = 0.1, y_min = 0){
+    c(resp_fun(x, y_max, y_min, shape = 200) * phi, resp_fun(x, y_min, y_max) * phi)
     # c(phi, phi)
 }
 
-
 comp_df <- sym_3sp_comp(a_sym, alphas = alphas,
-                        b_Xs = c(-1, -1, 1) * 0.1, 
-                        r_is = rep(0.1, 3),
-                        phases = 10, phase_len = 100, X_curve = FALSE)
+                        b_Xs = c(0.1, 0.1, 0.1),
+                        phases = 10, X_curve = TRUE)
 comp_df %>% gather(species, abundance, competitor:symbiont) %>%
     ggplot(aes(generation, abundance, color = species)) +
     geom_line() +
     theme_lan()
 
 
-one_equil <- sym_3sp_comp_equil(a_sym, alphas, b_Xs = c(1, 1, 0.1) * 0.1,
-                               r_is = c(0.1, 0.1, 0.1))
-one_equil
+# one_equil <- sym_3sp_comp_equil(a_sym, alphas, b_Xs = c(1, 1, 0.1) * 0.1,
+#                                r_is = c(0.1, 0.1, 0.1))
+# one_equil
 
 
 
-equil_sims <- function(a_sym_fun, sym_phis, sym_mins, b_Xs, b_X3s, ...) {
-    par_df <- expand.grid(sym_phi = sym_phis, sym_min = sym_mins, b_X3 = b_X3s)
+equil_sims <- function(a_sym_fun, sym_maxs, sym_mins, b_Xs, b_X3s, ...) {
+    par_df <- expand.grid(sym_max = sym_maxs, sym_min = sym_mins, b_X3 = b_X3s)
     one_sim <- function(i) {
-        sym_phi_i <- par_df$sym_phi[i]
+        sym_max_i <- par_df$sym_max[i]
         sym_min_i <- par_df$sym_min[i]
         b_Xs_i <- b_Xs
         b_Xs_i[3] <- par_df$b_X3[i]
-        a_sym_fun_i <- function(x) { a_sym_fun(x, phi = sym_phi_i, y_min = sym_min_i) }
+        a_sym_fun_i <- function(x) { a_sym_fun(x, y_max = sym_max_i, y_min = sym_min_i) }
         out_df <- sym_3sp_comp_equil(a_sym_fun_i, b_Xs = b_Xs_i, ...)
-        out_df$sym_phi <- sym_phi_i
+        out_df$sym_max <- sym_max_i
         out_df$sym_min <- sym_min_i
         out_df$b_X3 <- b_Xs_i[3]
         return(out_df)
@@ -244,41 +236,44 @@ equil_sims <- function(a_sym_fun, sym_phis, sym_mins, b_Xs, b_X3s, ...) {
 
 
 equil_df <- equil_sims(
-    a_sym, sym_phis = seq(0, 3, length.out = 101), sym_mins = c(0, -0.1), 
-    b_Xs = rep(0.1,3), b_X3s = c(0, -0.1), alphas = alphas, leeway = 1)
+    a_sym, 
+    sym_maxs = seq(0.2, 0, -0.1), 
+    sym_mins = seq(0.1, -0.1, length.out = 11), 
+    b_Xs = rep(0.1,3), 
+    b_X3s = c(0),#, -0.1, -0.15), 
+    alphas = alphas, leeway = 0.01)
+
 
 plot_df <- equil_df %>% 
-    # filter(b_X3 == 0) %>% 
     mutate(b_X3 = factor(b_X3, levels = sort(unique(b_X3), decreasing = TRUE), 
                          labels = paste('beta[3] ==', 
                                         sort(unique(b_X3), decreasing = TRUE))),
-           sym_min = factor(sym_min, levels = sort(unique(sym_min), decreasing = TRUE),
-                            labels = paste('sym[min] ==', 
-                                           sort(unique(sym_min), decreasing = TRUE))))
-
+           sym_max = factor(sym_max, levels = sort(unique(sym_max)), 
+                         labels = paste('alpha[s * ",max"] ==', 
+                                        sort(unique(sym_max))))) %>% 
+    mutate_at(vars(abund_lo, abund_hi), funs(. / 2000)) %>% 
+    mutate(abund_mid = mapply(function(x,y) median(c(x, y)), abund_hi, abund_lo))
 
 
 plot_df %>% 
-    ggplot(aes(sym_phi, color = species, fill = species)) + 
-    geom_ribbon(aes(ymin = abund_lo, ymax = abund_hi), color = NA, alpha = 0.2) +
-    geom_line(aes(y = abund_lo)) +
-    geom_line(aes(y = abund_hi)) +
-    ylab(expression('Equilibrium abundance (' * N[e] * ')')) +
-    xlab(expression('Symbiosis scaling parameter (' * phi * ')')) +
-    facet_grid(b_X3 ~ sym_min, labeller = label_parsed) +
+    ggplot(aes(sym_min, abund_mid, fill = species, color = species)) + 
+    geom_ribbon(aes(ymin = abund_lo, ymax = abund_hi), alpha = 0.4, color = NA) +
+    geom_line() +
+    ylab(expression('Relative long-term abundance (' * N[infinity] / K * ')')) +
+    xlab(expression(paste('Minimum symbiotic effect (', alpha[s * ',min'], ')'))) +
+    facet_grid(. ~ sym_max, labeller = label_parsed) +
     theme_lan() +
     scale_color_manual(values = gg_colors) +
     scale_fill_manual(values = gg_colors) +
     theme(legend.position = 'none') +
     geom_text_repel(
-        data = plot_df %>% filter(sym_phi == max(sym_phi), 
-                                  b_X3 == paste('beta[3] ==', 0),
-                                  sym_min == paste('sym[min] ==', 0)),
+        data = plot_df %>% filter(sym_max == paste('alpha[s * ",max"] ==', 0),
+                                  sym_min == 0),
         aes(y = abund_hi, label = species),
-        size = 3, segment.color = NA,
-        max.iter = 1e3L, nudge_y = -2000, nudge_x = 1,
-        box.padding = unit(1, 'lines'), fontface = 'bold')
-    
+        size = 3, segment.color = NA, fontface = 'bold',
+        max.iter = 1e3L, nudge_x = 0,
+        box.padding = unit(0.5, 'lines'))
+
 
 
 
@@ -291,7 +286,7 @@ plot_df %>%
 
 
 # # Response curves for symbiotic effects (Figure 1)
-# plot_df <- expand.grid(x = seq(0,1,length.out = 1001), g = c(1,2), y_m = c(0, -0.1)) %>%
+# plot_df <- expand.grid(x = seq(0,1,length.out = 1001), g = c(1,2), y_m = c(0, -1)) %>%
 #     as_data_frame %>%
 #     rowwise %>%
 #     mutate(y = a_sym(x, p = 1, y_min = y_m)[g]) %>%
@@ -311,6 +306,6 @@ plot_df %>%
 #         aes(label = g),
 #         size = 4, segment.color = NA,
 #         max.iter = 1e3L,
-#         nudge_x = -0.32, nudge_y = 0.27,
+#         nudge_x = -0.33, nudge_y = 0.27,
 #         box.padding = unit(1, 'lines'), fontface = 'bold')
-
+# 
