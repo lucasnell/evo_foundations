@@ -12,6 +12,7 @@ source('preamble.R')
 #     return(X)
 # }
 # plot(1:100, t_series(0.5, 0.25), type = 'l', xlab = 'time', ylab = 'abundance')
+# lines(1:100, t_series(0.5, 0.25), col = 'red')
 
 
 

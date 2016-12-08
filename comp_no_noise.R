@@ -197,18 +197,36 @@ alphas[1,2] <- -0.2
 
 # a_sym <- function(x, p = -0.5){a_sym_change_cont(x, p)}
 # Effect of species 3 on 2, and vice versa
-a_sym <- function(x, phi = 1, y_max = 0.1, y_min = 0){
+a_sym <- function(x, phi = 1, y_max = 0.1, y_min = -0.1){
     c(resp_fun(x, y_max, y_min, shape = 200) * phi, resp_fun(x, y_min, y_max) * phi)
-    # c(phi, phi)
 }
 
 comp_df <- sym_3sp_comp(a_sym, alphas = alphas,
                         b_Xs = c(0.1, 0.1, 0.1),
-                        phases = 10, X_curve = TRUE)
-comp_df %>% gather(species, abundance, competitor:symbiont) %>%
+                        phases = 3, X_curve = TRUE)%>% 
+    gather(species, abundance, competitor:symbiont)
+
+
+comp_df %>%
     ggplot(aes(generation, abundance, color = species)) +
     geom_line() +
-    theme_lan()
+    theme_lan() +
+    scale_y_continuous('Abundance', breaks = c(1000, 1500, 2000)) +
+    xlab('Time') +
+    scale_color_manual(values = gg_colors) +
+    scale_fill_manual(values = gg_colors) +
+    theme(legend.position = 'none') +
+    geom_text_repel(
+        data = comp_df %>% filter(generation == 120),
+        aes(y = abundance, label = species),
+        size = 3, segment.color = NA, fontface = 'bold',
+        max.iter = 1e3L, nudge_y = 0,
+        box.padding = unit(0.5, 'lines')) +
+    geom_text(data = data_frame(generation = rep(200,2), abundance = c(1250,1200),
+                                lab = c('alpha[s * ",min" ] == -0.1', 
+                                        'alpha[s * ",max" ] == 0.1')),
+              aes(label = lab), parse = TRUE, color = 'black')
+    
 
 
 # one_equil <- sym_3sp_comp_equil(a_sym, alphas, b_Xs = c(1, 1, 0.1) * 0.1,
@@ -216,9 +234,9 @@ comp_df %>% gather(species, abundance, competitor:symbiont) %>%
 # one_equil
 
 
-
 equil_sims <- function(a_sym_fun, sym_maxs, sym_mins, b_Xs, b_X3s, ...) {
     par_df <- expand.grid(sym_max = sym_maxs, sym_min = sym_mins, b_X3 = b_X3s)
+    par_df <- filter(par_df, sym_max >= sym_min)
     one_sim <- function(i) {
         sym_max_i <- par_df$sym_max[i]
         sym_min_i <- par_df$sym_min[i]
@@ -238,21 +256,22 @@ equil_sims <- function(a_sym_fun, sym_maxs, sym_mins, b_Xs, b_X3s, ...) {
 equil_df <- equil_sims(
     a_sym, 
     sym_maxs = seq(0.2, 0, -0.1), 
-    sym_mins = seq(0.1, -0.1, length.out = 11), 
+    sym_mins = seq(0.1, -0.1, length.out = 101), 
     b_Xs = rep(0.1,3), 
     b_X3s = c(0),#, -0.1, -0.15), 
-    alphas = alphas, leeway = 0.01)
+    alphas = alphas, leeway = 0.01) %>% 
+    mutate(abund_mid = mapply(function(x,y) median(c(x, y)), abund_hi, abund_lo))
 
 
 plot_df <- equil_df %>% 
     mutate(b_X3 = factor(b_X3, levels = sort(unique(b_X3), decreasing = TRUE), 
                          labels = paste('beta[3] ==', 
-                                        sort(unique(b_X3), decreasing = TRUE))),
-           sym_max = factor(sym_max, levels = sort(unique(sym_max)), 
-                         labels = paste('alpha[s * ",max"] ==', 
-                                        sort(unique(sym_max))))) %>% 
-    mutate_at(vars(abund_lo, abund_hi), funs(. / 2000)) %>% 
-    mutate(abund_mid = mapply(function(x,y) median(c(x, y)), abund_hi, abund_lo))
+                                        sort(unique(b_X3), decreasing = TRUE)))#,
+           # sym_max = factor(sym_max, levels = sort(unique(sym_max)), 
+           #               labels = paste('alpha[s * ",max"] ==', 
+           #                              sort(unique(sym_max))))
+           ) %>% 
+    mutate_at(vars(abund_lo, abund_hi, abund_mid), funs(. / 2000))
 
 
 plot_df %>% 
@@ -260,21 +279,32 @@ plot_df %>%
     geom_ribbon(aes(ymin = abund_lo, ymax = abund_hi), alpha = 0.4, color = NA) +
     geom_line() +
     ylab(expression('Relative long-term abundance (' * N[infinity] / K * ')')) +
-    xlab(expression(paste('Minimum symbiotic effect (', alpha[s * ',min'], ')'))) +
-    facet_grid(. ~ sym_max, labeller = label_parsed) +
+    scale_x_continuous(expression(paste('Minimum symbiotic effect (', 
+                                        alpha[s * ',min'], ')')),
+                       breaks = c(-0.1, 0, 0.1)) +
+    facet_grid(. ~ sym_max, labeller = label_parsed, scales = 'free_x') +
     theme_lan() +
+    ggtitle(expression("Maximum symbiotic effect (" * alpha[s * ",max"] * ")")) +
     scale_color_manual(values = gg_colors) +
     scale_fill_manual(values = gg_colors) +
-    theme(legend.position = 'none') +
+    theme(legend.position = 'none', 
+          plot.title = element_text(size = 11, face = 'plain', hjust = 0.5),
+          axis.title = element_text(size = 11, face = 'plain', hjust = 0.5)) +
     geom_text_repel(
-        data = plot_df %>% filter(sym_max == paste('alpha[s * ",max"] ==', 0),
-                                  sym_min == 0),
+        data = plot_df %>% filter(sym_max == 0, sym_min == 0),
         aes(y = abund_hi, label = species),
         size = 3, segment.color = NA, fontface = 'bold',
-        max.iter = 1e3L, nudge_x = 0,
+        max.iter = 1e3L, nudge_x = -0.005, nudge_y = 0.01,
         box.padding = unit(0.5, 'lines'))
 
 
+
+# When were median host abundances > median competitor abundances?
+equil_df %>% 
+    group_by(sym_max) %>% 
+    summarize(big = sym_min[
+        which(abund_mid[species == 'host'] >= abund_mid[species == 'competitor'])] %>% 
+            tail(., 1))
 
 
 # Vary b_X[3] from 0 to -b_X[2]
@@ -286,26 +316,26 @@ plot_df %>%
 
 
 # # Response curves for symbiotic effects (Figure 1)
-# plot_df <- expand.grid(x = seq(0,1,length.out = 1001), g = c(1,2), y_m = c(0, -1)) %>%
+# plot_df <- expand.grid(x = seq(0,1,length.out = 101), g = c(1,2), y_m = c(0, -0.1)) %>%
 #     as_data_frame %>%
 #     rowwise %>%
-#     mutate(y = a_sym(x, p = 1, y_min = y_m)[g]) %>%
+#     mutate(y = a_sym(x, p = 1, y_min = y_m, y_max = 0.1)[g]) %>%
 #     ungroup %>%
 #     mutate(g = factor(g, labels = c('host', 'symbiont')))
 # plot_df %>%
 #     ggplot(aes(x, y, color = factor(g), linetype = factor(y_m))) +
-#     geom_hline(yintercept = 0, linetype = 3, color = 'gray80') +
+#     # geom_hline(yintercept = 0, linetype = 3, color = 'gray80') +
 #     geom_line(size = 0.75) +
 #     theme_lan() +
 #     theme(legend.position = 'none') +
 #     scale_color_manual(values = gg_colors[2:3]) +
 #     scale_linetype_manual(values = c(2,1)) +
-#     ylab(expression(alpha[t] / phi)) +
-#     xlab(expression(X[t])) +
-#     geom_text_repel(data = plot_df %>% group_by(g) %>% filter(x == max(x), y_m == 0),
+#     ylab(expression(alpha[s])) +
+#     scale_x_continuous('X', breaks = c(0,0.5,1)) +
+#     geom_text_repel(data = plot_df %>% group_by(g) %>% filter(x == max(x), y_m == -0.1),
 #         aes(label = g),
 #         size = 4, segment.color = NA,
 #         max.iter = 1e3L,
-#         nudge_x = -0.33, nudge_y = 0.27,
+#         nudge_x = c(-0.03, 0), nudge_y = c(0.05, -0.01),
 #         box.padding = unit(1, 'lines'), fontface = 'bold')
-# 
+
