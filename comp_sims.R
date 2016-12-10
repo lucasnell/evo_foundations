@@ -26,7 +26,7 @@ source('preamble.R')
 sym_3sp_comp <- function(b2_change_fun, b3s, 
                          phases = 1, abundances_0 = rep(1000, 3), 
                          b1s = c(0.1,-0.1), phase_len = 100, r_sd = 0.05, K = 2000,
-                         spp_names = c('competitor', 'host', 'symbiont')) {
+                         spp_names = c('competitor', 'host', 'endosymbiont')) {
     time_len <- as.integer(phases * phase_len)
     X <- u_curve(time_len, phases = phases, c_max = 1, c_min = -1)
     n_spp <- 3
@@ -59,7 +59,7 @@ sym_3sp_comp <- function(b2_change_fun, b3s,
 
 sym_3sp_comp_lin <- function(b2_change_fun, b3s, abundances_0 = rep(1000, 3), 
                          b1s = c(0.1,-0.1), time_len = 100, r_sd = 0.05, K = 2000,
-                         spp_names = c('competitor', 'host', 'symbiont')) {
+                     spp_names = c('competitor', 'host', 'endosymbiont')) {
     X <- seq(1, -1, length.out = time_len)
     n_spp <- 3
     pop_sizes <- matrix(integer(time_len*n_spp), ncol = n_spp)

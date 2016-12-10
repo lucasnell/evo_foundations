@@ -71,7 +71,7 @@ sym_3sp_1phase <- function(abundances_0, X, a_sym_fun, alphas, b_Xs, K, r_is) {
 sym_3sp_comp_equil <- function(a_sym_fun, alphas, phase_len = 100, 
                                abundances_0 = rep(1000, 3), b_Xs = c(0.1,0.1,-0.1), 
                                K = 2000,
-                               spp_names = c('competitor', 'host', 'symbiont'),
+                               spp_names = c('competitor', 'host', 'endosymbiont'),
                                r_is = rep(0.1,3),
                                t_max = 60, X_curve = TRUE, leeway = 0) {
     
@@ -126,7 +126,7 @@ sym_3sp_comp_equil <- function(a_sym_fun, alphas, phase_len = 100,
 
 sym_3sp_comp <- function(a_sym_fun, alphas, phase_len = 100, phases = 1,
                          abundances_0 = rep(1000, 3), b_Xs = c(0.1,0.1,-0.1), K = 2000,
-                         spp_names = c('competitor', 'host', 'symbiont'),
+                         spp_names = c('competitor', 'host', 'endosymbiont'),
                          r_is = c(0.1, 0.1, 0.1),
                          X_curve = FALSE) {
     
@@ -204,10 +204,10 @@ a_sym <- function(x, phi = 1, y_max = 0.1, y_min = -0.1){
 comp_df <- sym_3sp_comp(a_sym, alphas = alphas,
                         b_Xs = c(0.1, 0.1, 0.1),
                         phases = 3, X_curve = TRUE)%>% 
-    gather(species, abundance, competitor:symbiont)
+    gather(species, abundance, competitor:endosymbiont)
 
 
-comp_df %>%
+one_comp_p <- comp_df %>%
     ggplot(aes(generation, abundance, color = species)) +
     geom_line() +
     theme_lan() +
@@ -220,14 +220,14 @@ comp_df %>%
         data = comp_df %>% filter(generation == 120),
         aes(y = abundance, label = species),
         size = 3, segment.color = NA, fontface = 'bold',
-        max.iter = 1e3L, nudge_y = 0,
+        max.iter = 1e3L, nudge_x = c(0,0,-65),
         box.padding = unit(0.5, 'lines')) +
-    geom_text(data = data_frame(generation = rep(200,2), abundance = c(1250,1200),
+    geom_text(data = data_frame(generation = rep(200,2), abundance = c(1300,1200),
                                 lab = c('alpha[s * ",min" ] == -0.1', 
                                         'alpha[s * ",max" ] == 0.1')),
               aes(label = lab), parse = TRUE, color = 'black')
-    
-
+# one_comp_p
+# ggsave('fig4.pdf', one_comp_p, width = 6, height = 3, units = 'in')
 
 # one_equil <- sym_3sp_comp_equil(a_sym, alphas, b_Xs = c(1, 1, 0.1) * 0.1,
 #                                r_is = c(0.1, 0.1, 0.1))
@@ -274,7 +274,7 @@ plot_df <- equil_df %>%
     mutate_at(vars(abund_lo, abund_hi, abund_mid), funs(. / 2000))
 
 
-plot_df %>% 
+equil_p <- plot_df %>% 
     ggplot(aes(sym_min, abund_mid, fill = species, color = species)) + 
     geom_ribbon(aes(ymin = abund_lo, ymax = abund_hi), alpha = 0.4, color = NA) +
     geom_line() +
@@ -297,7 +297,8 @@ plot_df %>%
         max.iter = 1e3L, nudge_x = -0.005, nudge_y = 0.01,
         box.padding = unit(0.5, 'lines'))
 
-
+# equil_p
+# ggsave('fig5.pdf', equil_p, width = 6, height = 4, units = 'in')
 
 # When were median host abundances > median competitor abundances?
 equil_df %>% 
@@ -315,14 +316,14 @@ equil_df %>%
 
 
 
-# # Response curves for symbiotic effects (Figure 1)
+# # Response curves for symbiotic effects (Figure 2)
 # plot_df <- expand.grid(x = seq(0,1,length.out = 101), g = c(1,2), y_m = c(0, -0.1)) %>%
 #     as_data_frame %>%
 #     rowwise %>%
 #     mutate(y = a_sym(x, p = 1, y_min = y_m, y_max = 0.1)[g]) %>%
 #     ungroup %>%
-#     mutate(g = factor(g, labels = c('host', 'symbiont')))
-# plot_df %>%
+#     mutate(g = factor(g, labels = c('host', 'endosymbiont')))
+# resp_p <- plot_df %>%
 #     ggplot(aes(x, y, color = factor(g), linetype = factor(y_m))) +
 #     # geom_hline(yintercept = 0, linetype = 3, color = 'gray80') +
 #     geom_line(size = 0.75) +
@@ -330,12 +331,15 @@ equil_df %>%
 #     theme(legend.position = 'none') +
 #     scale_color_manual(values = gg_colors[2:3]) +
 #     scale_linetype_manual(values = c(2,1)) +
-#     ylab(expression(alpha[s])) +
-#     scale_x_continuous('X', breaks = c(0,0.5,1)) +
-#     geom_text_repel(data = plot_df %>% group_by(g) %>% filter(x == max(x), y_m == -0.1),
+#     scale_y_continuous(expression('Symbiotic effect (' * alpha[s] * ')'),
+#                        limits = c(-0.1, 0.12)) +
+#     scale_x_continuous(expression('Environmental variable (' * X[t] * ')'),
+#                        breaks = c(0,0.5,1)) +
+#     geom_text_repel(data = plot_df %>% group_by(g) %>% filter(x == max(x), y_m == 0),
 #         aes(label = g),
 #         size = 4, segment.color = NA,
 #         max.iter = 1e3L,
-#         nudge_x = c(-0.03, 0), nudge_y = c(0.05, -0.01),
+#         nudge_x = c(-0.03, -0.3), nudge_y = c(-0.05, 0.025),
 #         box.padding = unit(1, 'lines'), fontface = 'bold')
-
+# resp_p
+# # ggsave('fig2.pdf', resp_p, width = 4, height = 3, units = 'in')

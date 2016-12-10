@@ -27,7 +27,7 @@ equil_dens <- function(alphas, Ks) {
 }
 
 alpha_sim <- function(alphas_original, symbioses, competitions, Ks = rep(2000, 3),
-                      spp_names = c('competitor', 'host', 'symbiont')) {
+                      spp_names = c('competitor', 'host', 'endosymbiont')) {
     par_df <- expand.grid(s = abs(symbioses), c = -abs(competitions))
     one_sim <- function(i, a_o, Ks) {
         s <- par_df$s[i]
@@ -56,7 +56,7 @@ equil_sim_df <- alpha_sim(alphas, seq(0.0, 0.9, length.out = 1000 + 1), a_comps)
 
 
 plot_df <- equil_sim_df %>% 
-    gather(species, abundance, competitor:symbiont) %>% 
+    gather(species, abundance, competitor:endosymbiont) %>% 
     mutate(a_comp = paste('alpha[12] / alpha[21] == ', a_comp / -0.1))
 
 
@@ -98,19 +98,19 @@ plot_a <- plot_df %>%
 
 
 
-
+# pdf('fig3.pdf', width = 6, height = 4, title = 'Nell, Figure 2', useDingbats = FALSE)
 grid.newpage()
 grid.draw(cbind(ggplotGrob(plot_a), ggplotGrob(plot_b), size = 'last'))
+# dev.off()
 
 
-
-# Simulations for when symbiont isn't at higher population density than others
+# Simulations for when endosymbiont isn't at higher population density than others
 # df <- alpha_sim(alphas, seq(0.0, 0.9, length.out = 1000 + 1), a_comps,
 #                           Ks = c(2000, 2000, 1000))
 # df %>% filter(a_comp == -0.5)
 # 
 # df %>% 
-#     gather(species, abundance, competitor:symbiont) %>% 
+#     gather(species, abundance, competitor:endosymbiont) %>% 
 #     mutate(a_comp = paste('alpha[12] / alpha[21] == ', a_comp / -0.1)) %>%
 #     # filter(a_sym <= 0.31, a_sym >= 0.035) %>%
 #     ggplot(aes(a_sym, abundance / 2000, color = species, linetype = species)) +

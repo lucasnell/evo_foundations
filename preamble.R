@@ -17,7 +17,9 @@ theme_lan <- function(base_size = 10, base_family = 'Helvetica') {
             panel.grid = element_blank(),
             legend.background = element_rect(fill = NA, color = NA),
             legend.title = element_blank(),
-            plot.title = element_text(face = 'bold', size = 14, hjust = 0)
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0),
+            axis.text = element_text(size = 10),
+            axis.title = element_text(size = 11)
         )
 }
 gg_colors <- c('#1b9e77', '#d95f02', '#7570b3')
@@ -54,9 +56,21 @@ u_curve_1x <- function(x, time_len, phases = 1, c_max = 1, c_min = 0) {
     phase_len <- time_len / phases
     (c_max - c_min) * 0.5 * {cos(x * (2*pi/phase_len)) + 1} + c_min
 }
-u_curve <- function(time_len, phases = 1, c_max = 1, c_min = 0) {
-    sapply(1:time_len, u_curve_1x, time_len = time_len, phases = phases, 
-           c_max = c_max, c_min = c_min)
+# u_curve <- function(time_len, phases = 1, c_max = 1, c_min = 0) {
+#     sapply(1:time_len, u_curve_1x, time_len = time_len, phases = phases, 
+#            c_max = c_max, c_min = c_min)
+# }
+u_curve <- function(phase_len, phases = 1, y_max = 1, y_min = 0, exact_mean = NULL) {
+    time_len <- phase_len * phases
+    x <- 1:(time_len)
+    out <- (y_max - y_min) * 0.5 * {cos(x * (2*pi/phase_len)) + 1} + y_min
+    if (!is.null(exact_mean)) {
+        # Above function can make mean(X) *very* close to, but still != 0
+        # Subtracting the mean multiple times takes care of this.
+        while (mean(out) != 0) { out <- out - mean(out) }
+        out <- out + exact_mean
+    }
+    return(out)
 }
 
 

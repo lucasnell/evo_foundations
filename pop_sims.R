@@ -330,16 +330,17 @@ sim_df %>%
 
 
 # # For figure 1:
-# ggplot(data = data_frame(x = seq(200), y = u_curve(200, 2, c_min = -1)), aes(x, y)) +
-#     geom_line() +
+# phase_p <- ggplot(data = data_frame(x = seq(200), y = u_curve(100, 2)), aes(x, y)) +
+#     geom_line(color = 'dodgerblue', size = 0.75) +
 #     xlab('Time') +
-#     ylab('X') +
-#     geom_segment(x = 0, xend = 100, y = 0, yend = 0, linetype = 2) +
+#     ylab(expression('Environmental variable (' * X[t] * ')')) +
+#     geom_segment(x = 0, xend = 100, y = 0.5, yend = 0.5, linetype = 2) +
 #     geom_segment(data = data_frame(x = c(0, 100), xend = c(0, 100),
-#                                    y = rep(-0.05,2), yend = rep(0.05,2)),
+#                                    y = rep(0.45,2), yend = rep(0.55,2)),
 #                  aes(xend = xend, yend = yend), linetype = 1) +
-#     annotate('text', x = 150, y = 1, hjust = 0.5, vjust = 1, size = 5,
-#              label = 'italic(L) == 100', parse = TRUE) +
-#     annotate('text', x = 50, y = 0.05, hjust = 0.5, vjust = 0, size = 5,
+#     annotate('text', x = 50, y = 0.55, hjust = 0.5, vjust = 0, size = 4,
 #              label = 'one phase') +
 #     theme_lan()
+# phase_p
+# # ggsave('fig1.pdf', phase_p, width = 4, height = 3, units = 'in')
+
