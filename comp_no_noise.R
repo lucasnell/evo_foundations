@@ -329,7 +329,7 @@ equil_df %>%
 #     geom_line(size = 0.75) +
 #     theme_lan() +
 #     theme(legend.position = 'none') +
-#     scale_color_manual(values = gg_colors[2:3]) +
+#     scale_color_manual(values = gg_colors[3:2]) +
 #     scale_linetype_manual(values = c(2,1)) +
 #     scale_y_continuous(expression('Symbiotic effect (' * alpha[s] * ')'),
 #                        limits = c(-0.1, 0.12)) +
